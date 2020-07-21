@@ -13,8 +13,10 @@ outofbounds = np.array([512])
 onelines = [x.split(',') for x in dsl.getCompositeFunctionKeys()]
 for l in onelines:
     if len(l) == 1: l.append('')
-
 functionList = dsl.getAllFunctionsAndOptionsList()
+oldFunctionList  = ['HEAD', 'LAST', 'ACCESS', 'MINIMUM', 'MAXIMUM', 'TAKE', 'DROP', 'FILTER', '>0', '<0', '%2==1',
+                   '%2==0', 'COUNT', 'MAP', 'MIN', 'MAX', '+', '-', '*', 'ZIPWITH', 'SCANL1', 'SORT', 'REVERSE',
+                   '*(-1)', '**2', '+1', '-1', '*2', '*3', '*4', '/2', '/3', '/4', 'SUM']
 allFncs = len(dsl.getCompositeFunctionKeys())
 takeLambda = dsl.getFunctionKeysWithLambda()
 
@@ -156,7 +158,12 @@ def readInForANN(filename, max_len):
     return Ys, ins, outs
 
 #Go through test set and calculate accuracy for predicted top k orderings.
-def calculateAccuracy(testSetFile, model, bl):
+def calculateAccuracy(testSetFile, model, bl, oldOrder = False):
+    if oldOrder:
+        functionListInternal = oldFunctionList
+    else:
+        functionListInternal = functionList
+
     with open(testSetFile, 'r') as f2:
         testSet = f2.readlines()
 
@@ -215,14 +222,14 @@ def calculateAccuracy(testSetFile, model, bl):
             #These top5,10,20 are all the individual functional element predictions. Must translate them into
             #predictions for actual lines.
             allpreds = np.flip(np.argsort(prediction), axis = 0)
-            allpreds = [[functionList[k], prediction[k]] for k in allpreds]
+            allpreds = [[functionListInternal[k], prediction[k]] for k in allpreds]
 
             #Extract program from the test set and split it into lines.
             result = sum([x.split(',') for x in testSet[testSetIndex*6].split('\\')[1:]], [])
             proglist=[]
             #Drop symbols for input, I3, X2 etc..
             for k in result:
-                if k in functionList:
+                if k in functionListInternal:
                     proglist.append(k)
             #Concatinate Functions that take lambdas with their lambda i.e. 'COUNT', '<0' becomes 'COUNT,<0'
             for i, k in enumerate(proglist):
